@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="dark">
+<title>Synapse Guard free browser draft checker</title><meta name="description" content="Review a draft locally against your supplied ticket, calendar, and attachment evidence. No account is required; draft and evidence content stay in browser memory."><link rel="canonical" href="https://synapse-guard-v1.synapse-guard.workers.dev/check/">
+<meta property="og:type" content="website"><meta property="og:site_name" content="Synapse Guard"><meta property="og:title" content="Synapse Guard free browser draft checker"><meta property="og:description" content="Review a draft locally against your supplied ticket, calendar, and attachment evidence. No account is required; draft and evidence content stay in browser memory."><meta property="og:url" content="https://synapse-guard-v1.synapse-guard.workers.dev/check/"><meta property="og:image" content="https://synapse-guard-v1.synapse-guard.workers.dev/social-card.png"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="Synapse Guard free browser draft checker"><meta name="twitter:description" content="Review a draft locally against your supplied ticket, calendar, and attachment evidence. No account is required; draft and evidence content stay in browser memory."><meta name="twitter:image" content="https://synapse-guard-v1.synapse-guard.workers.dev/social-card.png"><link rel="icon" href="/favicon.png"><script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"Synapse Guard","url":"https://synapse-guard-v1.synapse-guard.workers.dev"}</script>
+    <link rel="stylesheet" href="/style.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Synapse Guard home"><img class="brand-logo" src="/logo.png" width="32" height="32" alt=""><span>Synapse Guard</span></a>
+      <span class="mode">Local checker · no sending</span>
+    </header>
+    <main>
+      <section class="hero" aria-labelledby="page-title">
+        <p class="eyebrow">Evidence-grounded review</p>
+        <h1 id="page-title">Check the promise.<br><span>Show the limits.</span></h1>
+        <p class="lede">Review a draft against deliberately supplied ticket, calendar, and attachment evidence. A clean result is never shown when a required source is incomplete.</p>
+      </section>
+
+      <section class="workspace" aria-label="Draft checker">
+        <div class="editor-panel">
+          <div class="panel-heading">
+            <div><p class="step">01</p><h2>Draft</h2></div>
+            <button id="load-sample" class="quiet" type="button">Load synthetic sample</button>
+          </div>
+          <label for="draft">Message to review</label>
+          <p id="sample-label" class="help" hidden>Synthetic demonstration only. These records do not represent a connected workspace.</p>
+          <textarea id="draft" maxlength="20000" spellcheck="false" autocomplete="off" placeholder="Paste a draft here. Synapse Guard does not upload it."></textarea>
+          <div class="counter"><span id="count">0</span> / 20,000</div>
+
+          <details>
+            <summary>Evidence JSON <span>optional</span></summary>
+            <p class="help">Supply only the records relevant to this draft. Dates must include a UTC offset.</p>
+            <textarea id="evidence" class="code" aria-label="Evidence JSON" spellcheck="false" placeholder='{"tickets": [], "calendar_events": [], "attachments": []}'></textarea>
+          </details>
+          <div id="form-error" class="error" role="alert" tabindex="-1" hidden></div>
+          <button id="check" class="primary" type="button">Check draft</button>
+        </div>
+
+        <div class="result-panel" aria-live="polite" aria-busy="false">
+          <div class="panel-heading"><div><p class="step">02</p><h2>Review</h2></div><span id="result-badge" class="badge neutral">Waiting</span></div>
+          <div id="empty-state" class="empty-state">
+            <div class="radar" aria-hidden="true"><span></span></div>
+            <p>Findings and evidence coverage will appear here.</p>
+          </div>
+          <div id="result" hidden></div>
+        </div>
+      </section>
+    </main>
+    <footer><span>Deterministic rules</span><span>Synapse Guard does not upload drafts</span><span>Human review required</span><a href="/privacy/">Privacy &amp; limits</a><a href="/community/">Share feedback</a></footer>
+    <script type="module" src="/app.mjs"></script>
+  </body>
+</html>

@@ -1,0 +1,32 @@
+name: Browser demo feedback
+description: Report a confusing result using a synthetic or redacted example.
+title: "Demo feedback: "
+body:
+  - type: markdown
+    attributes:
+      value: "This issue is public. Use a synthetic or redacted example. Never include private drafts, workspace records, personal contact information, or credentials."
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened?
+      description: Include the coverage states and a synthetic example if helpful.
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and device
+      placeholder: "For example: Edge on Windows, or Safari on iPhone"
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Public submission
+      options:
+        - label: I reviewed this issue and included no sensitive content or credentials.
+          required: true

@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://synapse-guard-v1.synapse-guard.workers.dev/sitemap.xml

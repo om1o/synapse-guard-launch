@@ -1,0 +1,42 @@
+name: Private pilot conversation
+description: Tell us which pre-send checks matter to your work.
+title: "Pilot request: "
+body:
+  - type: markdown
+    attributes:
+      value: "This issue is public. Do not include private drafts, workspace records, personal contact information, or credentials. We will reply here; a request does not grant hosted access."
+  - type: dropdown
+    id: workflow
+    attributes:
+      label: Which workflow matters most?
+      options:
+        - Delivery commitments
+        - Meeting overlaps
+        - Attachment references
+        - A mix of these
+    validations:
+      required: true
+  - type: textarea
+    id: role
+    attributes:
+      label: What kind of work do you do?
+      description: A general role and workflow are enough. No company or customer names needed.
+    validations:
+      required: true
+  - type: dropdown
+    id: demo
+    attributes:
+      label: Have you tried the browser demo?
+      options:
+        - Yes, with the synthetic sample
+        - Yes, with my own authorized evidence
+        - Not yet
+    validations:
+      required: true
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Public submission
+      options:
+        - label: I reviewed this issue and included no private drafts, source records, contact information, or credentials.
+          required: true
