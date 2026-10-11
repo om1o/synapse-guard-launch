@@ -15,7 +15,7 @@
       <section class="hero" aria-labelledby="page-title">
         <p class="eyebrow">Evidence-grounded review</p>
         <h1 id="page-title">Check the promise.<br><span>Show the limits.</span></h1>
-        <p class="lede">Review a draft against deliberately supplied ticket, calendar, and attachment evidence. A clean result is never shown when a required source is incomplete.</p>
+        <p class="lede">Review a draft against deliberately supplied ticket, calendar, and attachment evidence. Coverage describes the checks the rules recognize; unsupported wording may be missed. Human review is always required.</p>
       </section>
 
       <section class="workspace" aria-label="Draft checker">
@@ -25,17 +25,18 @@
             <button id="load-sample" class="quiet" type="button">Load synthetic sample</button>
           </div>
           <label for="draft">Message to review</label>
-          <p id="sample-label" class="help" hidden>Synthetic demonstration only. These records do not represent a connected workspace.</p>
+          <p id="sample-label" class="help" hidden>Synthetic evidence loaded. These records do not represent a connected workspace; replace the evidence before checking your own draft.</p>
           <textarea id="draft" maxlength="20000" spellcheck="false" autocomplete="off" placeholder="Paste a draft here. Synapse Guard does not upload it."></textarea>
           <div class="counter"><span id="count">0</span> / 20,000</div>
 
           <details>
             <summary>Evidence JSON <span>optional</span></summary>
-            <p class="help">Supply only the records relevant to this draft. Dates must include a UTC offset.</p>
-            <textarea id="evidence" class="code" aria-label="Evidence JSON" spellcheck="false" placeholder='{"tickets": [], "calendar_events": [], "attachments": []}'></textarea>
+            <p class="help">Supply only relevant records. Omitted evidence means unknown. Use an empty list only after confirming no records are present. Meeting checks need an interval for every request, calendar_events, and a complete coverage interval. Dates must include a UTC offset. <a href="/how-it-works/">Evidence guide and limits</a>.</p>
+            <textarea id="evidence" class="code" aria-label="Evidence JSON" spellcheck="false" autocomplete="off" placeholder='{}'></textarea>
           </details>
           <div id="form-error" class="error" role="alert" tabindex="-1" hidden></div>
           <button id="check" class="primary" type="button">Check draft</button>
+          <button id="clear" class="quiet" type="button">Clear draft, evidence, and results</button>
         </div>
 
         <div class="result-panel" aria-live="polite" aria-busy="false">
