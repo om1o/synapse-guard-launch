@@ -88,3 +88,39 @@ test('public checker rejects a draft field in Evidence JSON', () => {
   assert.match(ui.get('#form-error').textContent, /without a draft field/);
   assert.equal(ui.get('#result').hidden, true);
 });
+
+for (const scenario of ['missing events', 'second meeting', 'stale event', 'attachment mismatch', 'mixed negation']) {
+  test(`release reproduction reaches the rendered UI: ${scenario}`, () => {
+    const ui = app(); ui.click('#load-sample');
+    const evidence = JSON.parse(ui.get('#evidence').value);
+    const quote = evidence.proposed_meetings[0].quote;
+    let expected;
+    if (scenario === 'attachment mismatch') {
+      ui.input('#draft', 'Please see the attached plan.');
+      ui.input('#evidence', JSON.stringify({ attachments: [{ name: 'planet.pdf' }] }));
+      expected = /Referenced attachment could not be matched/;
+    } else if (scenario === 'mixed negation') {
+      ui.input('#draft', 'We will not ship ATL-141, but we will ship ATL-142.');
+      ui.input('#evidence', JSON.stringify({ tickets: evidence.tickets }));
+      expected = /Delivery commitment conflicts with ATL-142/;
+    } else {
+      ui.input('#draft', quote + (scenario === 'second meeting' ? ' Can we call again later?' : ''));
+      if (scenario === 'missing events') {
+        delete evidence.calendar_events;
+        expected = /calendar events not supplied/;
+      } else if (scenario === 'second meeting') {
+        evidence.calendar_events = [];
+        expected = /meeting claim not fully normalized/;
+      } else {
+        evidence.calendar_events[0].retrieved_at = new Date(Date.now() - 86400000).toISOString();
+        expected = /calendar event evidence is stale or future dated/;
+      }
+      ui.input('#evidence', JSON.stringify(evidence));
+    }
+    ui.click('#check');
+    assert.equal(ui.get('#form-error').hidden, true);
+    assert.equal(ui.get('#result').hidden, false);
+    assert.notEqual(ui.get('#result-badge').textContent, 'No conflicts found');
+    assert.match(ui.get('#result').innerHTML, expected);
+  });
+}

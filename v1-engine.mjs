@@ -208,7 +208,7 @@ function sentenceList(draft) {
 
 // Scope negation to an independent clause, not every promise in a sentence.
 function clauseList(draft) {
-  return sentenceList(draft).flatMap((sentence) => sentence.split(/;\s*|,?\s+\b(?:but|yet|however)\b\s*|,?\s+and\s+(?=(?:we|I|you|they|he|she|it|can|could|will|would|let)\b)/i)).map((text) => text.trim()).filter(Boolean);
+  return sentenceList(draft).flatMap((sentence) => sentence.split(/;\s*|,\s+(?=(?:we|I|you|they|he|she|it|can|could|will|would|let)\b)|\s+—\s+|,?\s+\b(?:but|yet|however)\b\s*|,?\s+and\s+(?=(?:we|I|you|they|he|she|it|can|could|will|would|let)\b)/i)).map((text) => text.trim()).filter(Boolean);
 }
 
 function escaped(value) {
@@ -231,14 +231,24 @@ function conditionalDelivery(text) {
   return /\bif\b/i.test(text) && deliveryLanguage(text);
 }
 
+function conditionalDeliveryContext(original, clause) {
+  if (!conditionalDelivery(original)) return false;
+  if (conditionalDelivery(clause)) return true;
+  const prefix = original.slice(0, original.indexOf(clause));
+  const explicitContrast = /(?:[,;]\s*)?\b(?:but|yet|however)\b\s*$/i.test(prefix) || /^(?:but|yet|however)\b/i.test(clause);
+  const unrelatedContrast = explicitContrast && !deliveryLanguage(prefix);
+  return !unrelatedContrast;
+}
+
 function ticketClaims(draft, tickets = []) {
   const claims = [];
-  for (const sentence of clauseList(draft)) {
-    if (!deliveryLanguage(sentence) || trueDeliveryNegation(sentence)) continue;
-    for (const ticket of tickets) {
-      if (!hasId(sentence, ticket.id)) continue;
-      const conditionalContext = sentenceList(draft).some((original) => original.includes(sentence) && conditionalDelivery(original));
-      claims.push({ id: `ticket:${ticket.id.toLowerCase()}:${claims.length + 1}`, quote: sentence, ticket, ambiguous: conditionalContext });
+  for (const original of sentenceList(draft)) {
+    for (const sentence of clauseList(original)) {
+      if (!deliveryLanguage(sentence) || trueDeliveryNegation(sentence)) continue;
+      for (const ticket of tickets) {
+        if (!hasId(sentence, ticket.id)) continue;
+        claims.push({ id: `ticket:${ticket.id.toLowerCase()}:${claims.length + 1}`, quote: sentence, ticket, ambiguous: conditionalDeliveryContext(original, sentence) });
+      }
     }
   }
   return claims;
@@ -376,8 +386,14 @@ function calendarResult(input, now, sourceMode) {
 
   // One supplied interval cannot establish coverage for other meeting requests.
   const normalizedQuote = (text) => text.trim().replace(/[.!?,;]+$/, "").trim();
-  const unresolved = detected.filter((claim) => !proposals.some((proposal) =>
-    normalizedQuote(claim) === normalizedQuote(proposal.quote) && meetingLanguage(proposal.quote).length === 1));
+  const unmatchedProposals = [...proposals];
+  const unresolved = detected.filter((claim) => {
+    const index = unmatchedProposals.findIndex((proposal) =>
+      normalizedQuote(claim) === normalizedQuote(proposal.quote) && meetingLanguage(proposal.quote).length === 1);
+    if (index === -1) return true;
+    unmatchedProposals.splice(index, 1);
+    return false;
+  });
   if (unresolved.length || proposals.some((proposal) => meetingLanguage(proposal.quote).length > 1)) {
     interpretationReasons.push("meeting_claim_not_fully_normalized");
   }
@@ -439,7 +455,8 @@ function calendarResult(input, now, sourceMode) {
     if (relevant.some((event) => ageState(event.retrieved_at, now, 15 * 60_000) === "stale")) {
       state = "stale";
       reasons.push("calendar_event_evidence_is_stale_or_future_dated");
-    } else if (relevant.some((event) => !event.retrieved_at)) {
+    }
+    if (relevant.some((event) => !event.retrieved_at)) {
       if (state !== "stale") state = "missing";
       reasons.push("calendar_event_retrieval_time_missing");
     }

@@ -26,6 +26,8 @@ MIT. See [LICENSE](LICENSE).
 
 ## Validation and public-demo trial
 
-Run `node --test tests/*.test.mjs` with a supported Node.js release. The tests use synthetic cases and require no credentials or network access. Application-event tests use a DOM adapter and do not replace live browser or phone testing.
+Use Node.js 24. Run `npm ci` and `npm test`. Tests use synthetic evidence and require no service credentials. Application-event tests use a DOM adapter; they do not replace live-browser or physical-phone checks. These regressions are not an independent accuracy benchmark.
 
-See [the October 11 public-demo trial report](docs/PUBLIC_DEMO_TRIAL_2026-10-11.md) for observed behavior, reproduced defects, privacy-inspection limits, and remaining deployment/form/mobile checks. These regressions are not an independently validated accuracy benchmark.
+The engine remains byte-for-byte identical to `main` commit `30ef46f19a883df68e686e85ab3f71b5f0be85df` (version 0.1.1). Its 40-case regression suite includes the original PR engine cases plus eight follow-up cases. PR #2 adds six application-event tests. The duplicate 32-case file was consolidated into the 40-case suite; its coverage was retained.
+
+See the [October 11 trial](docs/PUBLIC_DEMO_TRIAL_2026-10-11.md), [release verification](docs/RELEASE_READINESS_2026-10-12.md), and [Cloudflare deployment procedure](docs/CLOUDFLARE_DEPLOYMENT.md).
