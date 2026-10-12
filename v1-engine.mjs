@@ -1,4 +1,4 @@
-export const ENGINE_VERSION = "0.1.0";
+export const ENGINE_VERSION = "0.1.1";
 
 const MAX = Object.freeze({
   draft: 20_000,
@@ -206,6 +206,11 @@ function sentenceList(draft) {
   return draft.split(/(?<=[.!?])\s+|\n+/).map((text) => text.trim()).filter(Boolean);
 }
 
+// Scope negation to an independent clause, not every promise in a sentence.
+function clauseList(draft) {
+  return sentenceList(draft).flatMap((sentence) => sentence.split(/;\s*|,\s+(?=(?:we|I|you|they|he|she|it|can|could|will|would|let)\b)|\s+—\s+|,?\s+\b(?:but|yet|however)\b\s*|,?\s+and\s+(?=(?:we|I|you|they|he|she|it|can|could|will|would|let)\b)/i)).map((text) => text.trim()).filter(Boolean);
+}
+
 function escaped(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -226,13 +231,24 @@ function conditionalDelivery(text) {
   return /\bif\b/i.test(text) && deliveryLanguage(text);
 }
 
+function conditionalDeliveryContext(original, clause) {
+  if (!conditionalDelivery(original)) return false;
+  if (conditionalDelivery(clause)) return true;
+  const prefix = original.slice(0, original.indexOf(clause));
+  const explicitContrast = /(?:[,;]\s*)?\b(?:but|yet|however)\b\s*$/i.test(prefix) || /^(?:but|yet|however)\b/i.test(clause);
+  const unrelatedContrast = explicitContrast && !deliveryLanguage(prefix);
+  return !unrelatedContrast;
+}
+
 function ticketClaims(draft, tickets = []) {
   const claims = [];
-  for (const sentence of sentenceList(draft)) {
-    if (!deliveryLanguage(sentence) || trueDeliveryNegation(sentence)) continue;
-    for (const ticket of tickets) {
-      if (!hasId(sentence, ticket.id)) continue;
-      claims.push({ id: `ticket:${ticket.id.toLowerCase()}:${claims.length + 1}`, quote: sentence, ticket, ambiguous: conditionalDelivery(sentence) });
+  for (const original of sentenceList(draft)) {
+    for (const sentence of clauseList(original)) {
+      if (!deliveryLanguage(sentence) || trueDeliveryNegation(sentence)) continue;
+      for (const ticket of tickets) {
+        if (!hasId(sentence, ticket.id)) continue;
+        claims.push({ id: `ticket:${ticket.id.toLowerCase()}:${claims.length + 1}`, quote: sentence, ticket, ambiguous: conditionalDeliveryContext(original, sentence) });
+      }
     }
   }
   return claims;
@@ -243,7 +259,7 @@ function anyTicketReferences(draft) {
 }
 
 function meetingLanguage(draft) {
-  return sentenceList(draft).filter((sentence) => /\b(?:meet|meeting|call|review)\b/i.test(sentence) && !/\b(?:not|cancel(?:led)?)\s+(?:meet|meeting|call|review)\b/i.test(sentence));
+  return clauseList(draft).filter((sentence) => /\b(?:meet|meeting|call|review)\b/i.test(sentence) && !/\b(?:not|cancel(?:led)?)\s+(?:meet|meeting|call|review)\b/i.test(sentence));
 }
 
 const WEEKDAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
@@ -368,6 +384,20 @@ function calendarResult(input, now, sourceMode) {
     return { findings: [], coverage: coverage("calendar", "ambiguous", sourceMode, { reasons: [...new Set(["meeting_interval_unresolved", ...interpretationReasons])] }) };
   }
 
+  // One supplied interval cannot establish coverage for other meeting requests.
+  const normalizedQuote = (text) => text.trim().replace(/[.!?,;]+$/, "").trim();
+  const unmatchedProposals = [...proposals];
+  const unresolved = detected.filter((claim) => {
+    const index = unmatchedProposals.findIndex((proposal) =>
+      normalizedQuote(claim) === normalizedQuote(proposal.quote) && meetingLanguage(proposal.quote).length === 1);
+    if (index === -1) return true;
+    unmatchedProposals.splice(index, 1);
+    return false;
+  });
+  if (unresolved.length || proposals.some((proposal) => meetingLanguage(proposal.quote).length > 1)) {
+    interpretationReasons.push("meeting_claim_not_fully_normalized");
+  }
+
   const events = input.calendar_events || [];
   const findings = [];
   for (const proposal of proposals) {
@@ -413,6 +443,24 @@ function calendarResult(input, now, sourceMode) {
     }
   }
   if (natural && state !== "stale") state = "ambiguous";
+  if (interpretationReasons.length && state === "complete") state = "ambiguous";
+  if (input.calendar_events === undefined) {
+    if (state !== "stale") state = "missing";
+    reasons.push("calendar_events_not_supplied");
+  } else {
+    // An envelope cannot make older event evidence fresh. Even free/cancelled
+    // records need freshness: their status is the reason they are excluded.
+    const relevant = events.filter((event) => proposals.some((proposal) =>
+      Date.parse(proposal.start) < Date.parse(event.end) && Date.parse(event.start) < Date.parse(proposal.end)));
+    if (relevant.some((event) => ageState(event.retrieved_at, now, 15 * 60_000) === "stale")) {
+      state = "stale";
+      reasons.push("calendar_event_evidence_is_stale_or_future_dated");
+    }
+    if (relevant.some((event) => !event.retrieved_at)) {
+      if (state !== "stale") state = "missing";
+      reasons.push("calendar_event_retrieval_time_missing");
+    }
+  }
   reasons.push(...interpretationReasons);
   return {
     findings,
@@ -431,13 +479,13 @@ function ticketResult(input, now, sourceMode) {
   if (!references.length || !sentenceList(input.draft).some(deliveryLanguage)) {
     return { findings: [], coverage: coverage("tickets", "not_applicable", sourceMode) };
   }
-  const positiveReferences = references.filter((reference) => sentenceList(input.draft).some((sentence) => hasId(sentence, reference) && deliveryLanguage(sentence) && !trueDeliveryNegation(sentence)));
+  const positiveReferences = references.filter((reference) => clauseList(input.draft).some((sentence) => hasId(sentence, reference) && deliveryLanguage(sentence) && !trueDeliveryNegation(sentence)));
   if (positiveReferences.length === 0) {
     return { findings: [], coverage: coverage("tickets", "not_applicable", sourceMode) };
   }
   const claims = ticketClaims(input.draft, tickets);
   const matched = new Set(claims.map((claim) => claim.ticket.id.toLowerCase()));
-  const missing = references.filter((id) => !tickets.some((ticket) => ticket.id.toLowerCase() === id.toLowerCase()));
+  const missing = positiveReferences.filter((id) => !tickets.some((ticket) => ticket.id.toLowerCase() === id.toLowerCase()));
   const ambiguousClaims = claims.filter((claim) => claim.ambiguous);
   const findings = [];
   for (const claim of claims) {
@@ -466,7 +514,7 @@ function ticketResult(input, now, sourceMode) {
     state = "ambiguous";
     reasons.push("conditional_delivery_claim_requires_confirmation");
   }
-  const relevant = tickets.filter((ticket) => references.some((id) => id.toLowerCase() === ticket.id.toLowerCase()));
+  const relevant = tickets.filter((ticket) => positiveReferences.some((id) => id.toLowerCase() === ticket.id.toLowerCase()));
   if (relevant.some((ticket) => ageState(ticket.retrieved_at, now, DAY_MS) === "stale")) {
     state = "stale";
     reasons.push("ticket_evidence_is_stale_or_future_dated");
@@ -499,7 +547,7 @@ function attachmentResult(input, sourceMode) {
     const target = normalizeReference(claim.label);
     const matches = input.attachments.filter((attachment) => {
       const candidate = normalizeReference(attachment.name);
-      return candidate === target || candidate.includes(target) || target.includes(candidate);
+      return Boolean(target && candidate) && candidate === target;
     });
     if (matches.length === 1) continue;
     const kind = input.attachments.length === 0 ? "missing_attachment" : "unresolved_reference";

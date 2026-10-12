@@ -23,3 +23,9 @@ Serve this directory with any local static HTTP server. Open the server's URL, t
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+## Engine validation
+
+The shared checker is version 0.1.1. Run `node --test tests/*.test.mjs` on Node.js 24 or later. Forty synthetic regressions cover calendar presence, freshness, per-request normalization, independent delivery clauses, conditional ambiguity, and exact normalized attachment names. They are not a held-out accuracy benchmark or proof of commercial readiness.
+
+The initial fixes and 32 cases came from this project's MIT-licensed draft PR #2, commit `8a92bb8310a5329f6e52e11f9366f0e8b3ca7564`. Eight further cases were added during independent review. The canonical engine was then exported here unchanged. The draft PR's separate UI changes have not been merged by this engine-only update.
