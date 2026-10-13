@@ -8,7 +8,7 @@ import { build, PUBLIC_FILES, sha256 } from '../scripts/build.mjs';
 test('release package contains only the allowlisted static site and matching asset hashes', async () => {
   const manifest = await build();
   const files = (await readdir(new URL('../dist/', import.meta.url), { recursive: true, withFileTypes: true }))
-    .filter(entry => entry.isFile()).map(entry => relative(fileURLToPath(new URL('../dist/', import.meta.url)), join(entry.parentPath, entry.name))).sort();
+    .filter(entry => entry.isFile()).map(entry => relative(fileURLToPath(new URL('../dist/', import.meta.url)), join(entry.parentPath, entry.name)).replaceAll('\\', '/')).sort();
   assert.deepEqual(files, [...PUBLIC_FILES, 'release.json'].sort());
   for (const [path, expected] of Object.entries(manifest.assets)) {
     assert.equal(sha256(await readFile(new URL(`../dist/${path}`, import.meta.url))), expected);

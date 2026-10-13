@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { ROOT } from './build.mjs';
+import { runNpm } from './npm-runner.mjs';
 
 if (process.argv.length > 2) throw new Error('Deployment overrides are not accepted. Use the reviewed public-demo configuration.');
 if (!/^[a-f0-9]{32}$/i.test(process.env.CLOUDFLARE_ACCOUNT_ID || '') || !process.env.CLOUDFLARE_API_TOKEN) {
@@ -13,7 +14,7 @@ const config = JSON.parse(await readFile(new URL('../wrangler.json', import.meta
 if (config.name !== 'synapse-guard-v1' || config.assets.directory !== './dist' || config.main || config.d1_databases || config.services) {
   throw new Error('Expected the isolated public static demo configuration.');
 }
-const run = (cmd, args) => execFileSync(cmd, args, { cwd: ROOT, stdio: 'inherit' });
+const run = (cmd, args) => runNpm(cmd, args, { cwd: ROOT, stdio: 'inherit' });
 run('npm', ['run', 'check']);
 // Verify the selected account already has the named worker; do not silently create it elsewhere.
 const api = `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/workers`;

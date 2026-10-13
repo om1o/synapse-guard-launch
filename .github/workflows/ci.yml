@@ -25,3 +25,12 @@ jobs:
           name: public-demo-${{ github.sha }}
           path: dist/
           if-no-files-found: error
+  windows-launcher:
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --test tests/npm-runner.test.mjs

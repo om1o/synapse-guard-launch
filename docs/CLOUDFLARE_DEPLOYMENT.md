@@ -46,6 +46,8 @@ npm run deploy
 
 The wrapper reruns checks, verifies the existing account/worker through the Cloudflare API, prints the previous deployment metadata for rollback, and runs the pinned Wrangler. No credentials are printed by the wrapper. Save the new version ID from Wrangler's output. It then runs the HTTP release verifier. A verifier failure after upload means the new version may already be live: investigate or roll back; do not report a successful release.
 
+The wrapper launches npm and npx through Node and their JavaScript CLI entrypoints, not Windows command shims or a command shell. It uses npm's `npm_execpath` lifecycle metadata, with the standard Windows Node/npm installation as a fallback. Run the documented `npm run deploy` command so lifecycle metadata is available on other platforms. `tests/npm-runner.test.mjs` covers version-only probes, literal paths/arguments, and failure propagation without credentials or deployment; the Windows CI job runs only these launcher checks. See [Node's Windows subprocess guidance](https://nodejs.org/api/child_process.html#spawning-bat-and-cmd-files-on-windows).
+
 From the same candidate checkout, rerun as needed:
 
 ```sh
