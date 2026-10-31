@@ -35,3 +35,18 @@ test('site phone navigation, text, article, and footer links keep a 44px minimum
   assert.match(phoneRules, /\.brand,\.nav-links a,\.text-link,\.article a:not\(\.primary\),footer a\{[^}]*display:inline-flex;[^}]*align-items:center;[^}]*min-height:44px/);
   assert.match(css, /\.primary\{[^}]*min-height:49px/);
 });
+
+test('phone typography keeps substantive and helper copy readable while metadata stays compact', async () => {
+  const [siteCss, checkerCss] = await Promise.all([
+    readFile(new URL('../site.css', import.meta.url), 'utf8'),
+    readFile(new URL('../style.css', import.meta.url), 'utf8'),
+  ]);
+  const sitePhoneRules = siteCss.match(/@media\s*\(max-width:\s*520px\)\s*\{([\s\S]*?)\}\s*$/)?.[1];
+  const checkerPhoneRules = checkerCss.match(/@media\s*\(max-width:\s*520px\)\s*\{([\s\S]*?)\}\s*(?=@media|$)/)?.[1];
+  assert.ok(sitePhoneRules, 'missing site phone-only typography rules');
+  assert.ok(checkerPhoneRules, 'missing checker phone-only typography rules');
+  assert.match(sitePhoneRules, /\.preview-result>p\{font-size:1rem\}/);
+  assert.match(sitePhoneRules, /\.fine\{font-size:\.875rem\}/);
+  assert.match(checkerPhoneRules, /\.help\s*\{[^}]*font-size:\s*\.875rem/);
+  assert.match(siteCss, /\.eyebrow\{font-size:\.77rem/);
+});
