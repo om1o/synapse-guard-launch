@@ -22,7 +22,7 @@ npm ci
 npm run deploy:dry-run
 ```
 
-Wrangler is pinned to 4.149.0 in `package.json` and the lockfile. `npm run check` runs syntax checks, synthetic regressions and the static build. `scripts/build.mjs` copies an explicit 17-file allowlist into `dist/`, never the repository root. `dist/release.json` records the source revision, whether the tree was dirty, and SHA-256 hashes for all public assets. Tests, documentation, Git files, package metadata and credentials are not public assets. `_headers` retains the browser's `connect-src 'none'` restriction. There is no server-side application entry point or private service binding.
+Wrangler is pinned to 4.156.0 in `package.json` and the lockfile. `npm run check` runs syntax checks, synthetic regressions and the static build. `scripts/build.mjs` copies an explicit 17-file allowlist into `dist/`, never the repository root. `dist/release.json` records the source revision, whether the tree was dirty, and SHA-256 hashes for all public assets. Tests, documentation, Git files, package metadata and credentials are not public assets. `_headers` retains the browser's `connect-src 'none'` restriction. There is no server-side application entry point or private service binding.
 
 The GitHub `Public demo checks` workflow performs the same credential-free checks and preserves a package artifact. It does **not** deploy on a push or PR event. A successful dry run validates packaging/configuration, not account permissions, Cloudflare routing, browser behavior or mobile usability.
 
