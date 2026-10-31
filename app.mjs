@@ -11,15 +11,27 @@ const result = document.querySelector("#result");
 const badge = document.querySelector("#result-badge");
 const panel = document.querySelector(".result-panel");
 const sampleLabel = document.querySelector("#sample-label");
+const clear = document.querySelector("#clear");
 
 function invalidateReport() {
   result.hidden = true;
   empty.hidden = false;
   badge.textContent = "Waiting";
   badge.className = "badge neutral";
+  result.replaceChildren();
+  error.hidden = true;
 }
 draft.addEventListener("input", () => { count.textContent = String(draft.value.length); invalidateReport(); });
 evidence.addEventListener("input", () => { sampleLabel.hidden = true; invalidateReport(); });
+clear.addEventListener("click", () => {
+  draft.value = "";
+  evidence.value = "";
+  count.textContent = "0";
+  sampleLabel.hidden = true;
+  error.textContent = "";
+  invalidateReport();
+  draft.focus();
+});
 
 loadSample.addEventListener("click", () => {
   invalidateReport();
@@ -46,6 +58,24 @@ function escapeHtml(value) {
   return node.innerHTML;
 }
 
+const coverageHelp = {
+  complete: "Evidence supplied for the recognized checks; this does not mean the draft is correct.",
+  partial: "Some relevant evidence is missing or the supplied read is incomplete.",
+  missing: "Required evidence or its retrieval time was not supplied.",
+  stale: "Relevant evidence is too old or dated in the future. Refresh it before relying on the result.",
+  ambiguous: "A claim, time, or file name needs clarification before it can be fully checked.",
+  not_applicable: "No supported claim was recognized for this category. Other wording may be missed.",
+};
+
+function sourceMarkup(source) {
+  const label = escapeHtml(source.id);
+  const url = source.url ? new URL(source.url) : null;
+  const hostname = url?.hostname.replace(/\.$/, "");
+  const synthetic = url && (hostname === "invalid" || hostname.endsWith(".invalid"));
+  const link = url && !synthetic ? `<a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${label} · ${escapeHtml(url.hostname)}</a>` : `${label}${synthetic ? " · synthetic source (not a live link)" : ""}`;
+  return `${link}${source.retrieved_at ? ` · retrieved ${escapeHtml(source.retrieved_at)}` : ""}`;
+}
+
 function render(report) {
   const statusMap = {
     needs_review: ["Review", "review"],
@@ -61,14 +91,14 @@ function render(report) {
       <p class="quote">“${escapeHtml(item.quote)}”</p>
       <p>${escapeHtml(item.evidence)}</p>
       <p><strong>Suggested review:</strong> ${escapeHtml(item.suggestion)}</p>
-      <ul class="sources">${item.sources.map(source => `<li>${source.url ? `<a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(source.id)} · ${escapeHtml(new URL(source.url).hostname)}</a>` : escapeHtml(source.id)}${source.retrieved_at ? ` · retrieved ${escapeHtml(source.retrieved_at)}` : ""}</li>`).join("")}</ul>
+      <ul class="sources">${item.sources.map(source => `<li>${sourceMarkup(source)}</li>`).join("")}</ul>
     </article>`).join("") : '<article class="finding"><h3>No supported conflict detected</h3><p>Read the coverage below before relying on this result.</p></article>';
   const coverage = report.coverage.map((item) => `
     <div class="coverage-row">
       <strong>${escapeHtml(item.family)}</strong>
-      <div><span class="state">${escapeHtml(item.status)}</span>${item.reasons.length ? `<p>${escapeHtml(item.reasons.join(" · "))}</p>` : ""}</div>
+      <div><span class="state">${escapeHtml(item.status.replaceAll("_", " "))}</span><p>${coverageHelp[item.status]}</p>${item.reasons.length ? `<p>${escapeHtml(item.reasons.map(reason => reason.replaceAll("_", " ").replace(":", ": ")).join(" · "))}</p>` : ""}</div>
     </div>`).join("");
-  result.innerHTML = `${findings}<h3>Evidence coverage</h3>${coverage}`;
+  result.innerHTML = `${findings}<h3>Evidence coverage</h3>${coverage}<p class="help">Possible conflicts only. Human review is required; this result does not certify the draft or grant permission to send.</p>`;
   empty.hidden = true;
   result.hidden = false;
 }
