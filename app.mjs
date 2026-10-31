@@ -70,7 +70,8 @@ const coverageHelp = {
 function sourceMarkup(source) {
   const label = escapeHtml(source.id);
   const url = source.url ? new URL(source.url) : null;
-  const synthetic = url && (url.hostname === "example.invalid" || url.hostname.endsWith(".example.invalid"));
+  const hostname = url?.hostname.replace(/\.$/, "");
+  const synthetic = url && (hostname === "invalid" || hostname.endsWith(".invalid"));
   const link = url && !synthetic ? `<a href="${escapeHtml(source.url)}" target="_blank" rel="noopener noreferrer">${label} · ${escapeHtml(url.hostname)}</a>` : `${label}${synthetic ? " · synthetic source (not a live link)" : ""}`;
   return `${link}${source.retrieved_at ? ` · retrieved ${escapeHtml(source.retrieved_at)}` : ""}`;
 }

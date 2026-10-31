@@ -82,6 +82,33 @@ test('findings escape supplied text and keep real HTTPS citations protected', ()
   assert.match(ui.get('#result').innerHTML, /rel="noopener noreferrer"/);
 });
 
+// RFC 6761 section 6.4 reserves invalid. and every name beneath it.
+for (const host of ['invalid', 'invalid.', 'jira.invalid', 'EXAMPLE.INVALID.', 'nested.jira.invalid.']) {
+  test(`reserved ${host} citations remain labels, not live links`, () => {
+    const ui = app();
+    ui.input('#draft', 'We will ship ATL-142.');
+    ui.input('#evidence', JSON.stringify({ tickets: [{ id: 'ATL-142', title: 'Synthetic release', status: 'blocked', retrieved_at: new Date().toISOString(), source_url: `https://${host}/browse/ATL-142` }] }));
+    ui.click('#check');
+    assert.equal(ui.get('#form-error').hidden, true);
+    assert.equal(ui.get('#result-badge').textContent, 'Review');
+    assert.match(ui.get('#result').innerHTML, /ATL-142 · synthetic source \(not a live link\)/);
+    assert.doesNotMatch(ui.get('#result').innerHTML, /<a\b/);
+  });
+}
+
+for (const host of ['notinvalid.com', 'invalid.example.com', 'jira.invalid.com']) {
+  test(`non-reserved ${host} citation keeps its protected HTTPS link`, () => {
+    const ui = app();
+    ui.input('#draft', 'We will ship ATL-142.');
+    const url = `https://${host}/browse/ATL-142`;
+    ui.input('#evidence', JSON.stringify({ tickets: [{ id: 'ATL-142', title: 'Synthetic release', status: 'blocked', source_url: url }] }));
+    ui.click('#check');
+    assert.equal(ui.get('#form-error').hidden, true);
+    assert.ok(ui.get('#result').innerHTML.includes(`href="${url}" target="_blank" rel="noopener noreferrer"`));
+    assert.doesNotMatch(ui.get('#result').innerHTML, /synthetic source/);
+  });
+}
+
 test('public checker rejects a draft field in Evidence JSON', () => {
   const ui = app(); ui.input('#draft', 'Hello'); ui.input('#evidence', '{"draft":"override"}'); ui.click('#check');
   assert.equal(ui.get('#form-error').hidden, false);
