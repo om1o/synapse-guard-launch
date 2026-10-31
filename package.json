@@ -13,5 +13,5 @@
     "deploy": "node scripts/deploy.mjs",
     "verify:release": "node scripts/verify-release.mjs"
   },
-  "devDependencies": { "wrangler": "4.149.0" }
+  "devDependencies": { "wrangler": "4.156.0" }
 }
